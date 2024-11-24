@@ -1,7 +1,7 @@
-package br.com.italo.springftp.controller;
+package br.com.italo.springftp.application;
 
-import br.com.italo.springftp.service.StorageFileNotFoundException;
-import br.com.italo.springftp.service.StorageService;
+import br.com.italo.springftp.infrastructure.storage.exception.StorageFileNotFoundException;
+import br.com.italo.springftp.core.port.outgoing.FileStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -22,20 +22,20 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 
 @Controller
-public class FileUploadController {
+public class FileController {
 
-    private final StorageService storageService;
+    private final FileStorage fileStorage;
 
     @Autowired
-    public FileUploadController(StorageService storageService) {
-        this.storageService = storageService;
+    public FileController(FileStorage fileStorage) {
+        this.fileStorage = fileStorage;
     }
 
     @GetMapping("/")
     public String listUploadedFiles(Model model) throws IOException {
 
-        model.addAttribute("files", storageService.loadAll().map(
-                        path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+        model.addAttribute("files", fileStorage.loadAll().map(
+                        path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,
                                 "serveFile", path.getFileName().toString()).build().toUri().toString())
                 .collect(Collectors.toList()));
 
@@ -46,7 +46,7 @@ public class FileUploadController {
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
 
-        Resource file = storageService.loadAsResource(filename);
+        Resource file = fileStorage.loadAsResource(filename);
 
         if (file == null)
             return ResponseEntity.notFound().build();
@@ -59,7 +59,7 @@ public class FileUploadController {
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
 
-        storageService.store(file);
+        fileStorage.store(file);
         redirectAttributes.addFlashAttribute("message",
                 "You successfully uploaded " + file.getOriginalFilename() + "!");
 

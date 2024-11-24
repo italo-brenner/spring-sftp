@@ -1,32 +1,40 @@
-package br.com.italo.springftp.service;
+package br.com.italo.springftp.infrastructure.storage;
 
+import br.com.italo.springftp.core.port.outgoing.FileStorage;
+import br.com.italo.springftp.infrastructure.storage.config.StorageProperties;
+import br.com.italo.springftp.infrastructure.storage.exception.StorageException;
+import br.com.italo.springftp.infrastructure.storage.exception.StorageFileNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.sshd.sftp.client.SftpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.integration.file.remote.session.Session;
+import org.springframework.integration.file.remote.session.SessionFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.stream.Stream;
 
 @Slf4j
 @Service
-public class FileSystemStorageService implements StorageService {
+public class FileStorageAdapter implements FileStorage {
 
     private final Path rootLocation;
 
     @Autowired
-    public FileSystemStorageService(StorageProperties properties) {
+    private SessionFactory<SftpClient.DirEntry> sftpSessionFactory;
+
+    @Autowired
+    public FileStorageAdapter(StorageProperties properties) {
             if (properties.getLocation().trim().length() == 0) {
                 throw new StorageException("File upload location can not be Empty.");
             }
@@ -47,24 +55,13 @@ public class FileSystemStorageService implements StorageService {
 
     @Override
     public void store(MultipartFile file) {
+        log.info("Entrou no método store(MultipartFile file)");
         try {
-            if (file.isEmpty()) {
-                throw new StorageException("Failed to store empty file.");
+            try (Session<SftpClient.DirEntry> session = sftpSessionFactory.getSession()) {
+                session.write(file.getInputStream(), "upload/" + file.getOriginalFilename());
+                log.info("Upload concluído: {}", file.getOriginalFilename());
             }
-            Path destinationFile = this.rootLocation.resolve(
-                            Paths.get(file.getOriginalFilename()))
-                    .normalize().toAbsolutePath();
-            if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
-                // This is a security check
-                throw new StorageException(
-                        "Cannot store file outside current directory.");
-            }
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile,
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new StorageException("Failed to store file.", e);
         }
     }

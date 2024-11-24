@@ -1,0 +1,15 @@
+https://medium.com/@tshenolomos/guide-to-creating-an-sftp-server-with-docker-using-ssh-key-ce9bddb77f39
+
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com" -f $HOME/.ssh/id_rsa
+chmod 600 ~/.ssh/docker_rsa
+ssh-add ~/.ssh/docker_rsa
+cp $HOME/.ssh/docker_rsa.pub .
+docker build -t my-sftp-server-image .
+docker run -d --name my-sftp -p 2222:22 my-sftp-server-image
+docker ps
+docker logs my_sftp_container
+sftp -oPort=2222 sftpuser@0.0.0.0
+ls /path/to/directory
+put example.txt /remote/directory/example.txt
+get example.txt /local/directory/example.txt
+rm example.txt

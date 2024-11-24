@@ -1,4 +1,4 @@
-package br.com.italo.springftp.service;
+package br.com.italo.springftp.infrastructure.storage.exception;
 
 
 public class StorageFileNotFoundException extends StorageException {
