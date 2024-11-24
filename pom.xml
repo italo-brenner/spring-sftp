@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>br.com.italo</groupId>
-	<artifactId>spring-ftp</artifactId>
+	<artifactId>spring-sftp</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>spring-ftp</name>
-	<description>Spring Boot FTP</description>
+	<name>spring-sftp</name>
+	<description>Spring Boot SFTP</description>
 	<properties>
 		<java.version>21</java.version>
 	</properties>
